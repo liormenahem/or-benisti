@@ -2,18 +2,34 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [sent, setSent] = useState(false);
+  const [loading] = useState(false);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Frontend only: demonstrate submission
-    console.log({ name, email, phone });
+
+    const payload = { name, email, phone };
+    console.log("[LEAD] trying to insert:", payload);
+
+    const { data, error, status, statusText } = await supabase
+      .from("leads")
+      .insert([payload]);
+
+    console.log("[LEAD] insert result:", { status, statusText, error, data });
+
+    if (error) {
+      alert("שגיאה בשמירת הפרטים: " + (error.message || "unknown"));
+      return;
+    }
+
     setSent(true);
+    setName(""); setEmail(""); setPhone("");
   }
 
   return (
@@ -38,7 +54,6 @@ export default function ContactPage() {
               <input
                 className="border rounded-xl2 px-3 py-2"
                 placeholder="שם מלא"
-                aria-label="שם מלא"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required
@@ -47,7 +62,6 @@ export default function ContactPage() {
                 className="border rounded-xl2 px-3 py-2"
                 type="email"
                 placeholder="אימייל"
-                aria-label="אימייל"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -56,12 +70,13 @@ export default function ContactPage() {
                 className="border rounded-xl2 px-3 py-2"
                 type="tel"
                 placeholder="טלפון"
-                aria-label="טלפון"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 required
               />
-              <button className="btn-primary" type="submit">שליחה</button>
+              <button className="btn-primary disabled:opacity-60" type="submit" disabled={loading}>
+                {loading ? "שולח..." : "שליחה"}
+              </button>
               {sent && <p className="text-green-600 text-sm">תודה! נחזור אליך בהקדם.</p>}
             </div>
           </form>
